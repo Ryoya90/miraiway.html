@@ -1950,7 +1950,7 @@ function getFilteredTasks() {
   if (tf !== 'all') list = list.filter(t => t.type === tf);
   const mf = document.getElementById('memberFilter')?.value || filterSidebar;
   const member = mf || filterSidebar;
-  if (member) list = list.filter(t => t.assignee === member);
+  if (member) list = list.filter(t => assigneeArr(t).includes(member));
   return list;
 }
 
@@ -2060,7 +2060,7 @@ function closeMultiDropdown() {
 let ntAssignees = []; // for new task modal
 
 function populateSelects() {
-  const projects = [...new Set(tasks.filter(t => t.type==='プロジェクト').map(t => t.project))];
+const projects = [...new Set(tasks.filter(t => t.type==='プロジェクト' && t.status !== '完了').map(t => t.project))];
   document.getElementById('nt-project').innerHTML =
     '<option value="">なし</option>' + projects.map(p => `<option>${p}</option>`).join('');
 
@@ -2112,7 +2112,7 @@ function renderTaskView() {
 function updateCounts() {
   const base = tasks.filter(t => {
     const mf = document.getElementById('memberFilter')?.value || filterSidebar;
-    if (mf && t.assignee !== mf) return false;
+   if (mf && !assigneeArr(t).includes(mf)) return false;
     const tf = document.getElementById('typeFilter')?.value || 'all';
     if (tf !== 'all' && t.type !== tf) return false;
     const q = searchQuery.toLowerCase();
@@ -2196,7 +2196,7 @@ function renderTable() {
     if (t.status === '完了') return false; // 完了タスクは別タブへ
     if (q && !t.task.toLowerCase().includes(q) && !(t.project||'').toLowerCase().includes(q) && !(t.assignee||'').toLowerCase().includes(q)) return false;
     if (filterStatus !== 'all' && t.status !== filterStatus) return false;
-    if (member && t.assignee !== member) return false;
+    if (member && !assigneeArr(t).includes(member)) return false;
     return true;
   });
 
@@ -2725,7 +2725,7 @@ function renderDashboard() {
   // member progress
   const mp = document.getElementById('memberProgress');
   mp.innerHTML = MEMBERS.map(m => {
-    const mt = tasks.filter(t=>t.assignee===m.name && t.type==='タスク');
+   const mt = tasks.filter(t=>assigneeArr(t).includes(m.name) && t.type==='タスク');
     const md = mt.filter(t=>t.status==='完了').length;
     const pct = mt.length ? Math.round(md/mt.length*100) : 0;
     return `
@@ -2783,7 +2783,7 @@ function selectMember(id) {
   renderMembers();
   const m = MEMBERS.find(x=>x.id===id);
   if (!m) return;
-  const memberTasks = tasks.filter(t=>t.assignee===m.name);
+  const memberTasks = tasks.filter(t=>assigneeArr(t).includes(m.name) && t.status !== '完了');
   const card = document.getElementById('memberDetailCard');
   card.style.display = '';
   document.getElementById('memberDetailTitle').textContent = `👤 ${m.name} の担当タスク (${memberTasks.length}件)`;
